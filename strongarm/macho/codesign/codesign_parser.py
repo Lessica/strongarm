@@ -1,10 +1,12 @@
+import hashlib
 from typing import Optional
 
 from strongarm.logger import strongarm_logger
 from strongarm.macho.macho_binary import MachoBinary
 from strongarm.macho.macho_definitions import StaticFilePointer
 
-from .codesign_definitions import CodesignBlobTypeEnum, CSBlob, CSBlobIndex, CSCodeDirectory, CSSuperblob
+from .codesign_definitions import CodesignBlobTypeEnum, CodesignHashTypeEnum, CSBlob, CSBlobIndex, CSCodeDirectory, \
+    CSSuperblob
 
 logger = strongarm_logger.getChild(__file__)
 
@@ -22,6 +24,7 @@ class CodesignParser:
         self.entitlements: bytearray = bytearray(b"<plist></plist>")
         self.signing_identifier: Optional[str] = None
         self.signing_team_id: Optional[str] = None
+        self.cdhash: Optional[str] = None
 
         # If the binary does not have a code signature, we have nothing to do
         if not self.binary.code_signature_cmd:
@@ -122,6 +125,15 @@ class CodesignParser:
             team_id_address = code_directory.binary_offset + code_directory.team_offset
             team_id_string = self.binary.get_full_string_from_start_address(team_id_address, virtual=False)
             self.signing_team_id = team_id_string
+
+        cd_data = self.binary.get_bytes(file_offset, code_directory.length)
+        if code_directory.hash_type == CodesignHashTypeEnum.CSSLOT_HASH_SHA1:
+            self.cdhash = hashlib.sha1(cd_data).hexdigest()
+        elif code_directory.hash_type == CodesignHashTypeEnum.CSSLOT_HASH_SHA256 or \
+                code_directory.hash_type == CodesignHashTypeEnum.CSSLOT_HASH_SHA256_TRUNCATED:
+            self.cdhash = hashlib.sha256(cd_data).hexdigest()
+        elif code_directory.hash_type == CodesignHashTypeEnum.CSSLOT_HASH_SHA384:
+            self.cdhash = hashlib.sha384(cd_data).hexdigest()
 
     def print_code_directory(self, code_dir: CSCodeDirectory) -> None:
         print(f"CodeDirectory @ {hex(code_dir.binary_offset)}")

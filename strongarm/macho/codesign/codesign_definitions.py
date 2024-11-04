@@ -16,6 +16,15 @@ class CodesignBlobTypeEnum(IntEnum):
     CSMAGIC_BLOBWRAPPER = 0xFADE0B01  # CMS signature, "among other things" from the source code
 
 
+class CodesignHashTypeEnum(IntEnum):
+    """Hash types for codesigning."""
+
+    CSSLOT_HASH_SHA1 = 1
+    CSSLOT_HASH_SHA256 = 2
+    CSSLOT_HASH_SHA256_TRUNCATED = 3
+    CSSLOT_HASH_SHA384 = 4
+
+
 class CSBlobStruct(BigEndianStructure):
     """Basic CodeSign blob structure. These fields shared by all CodeSign blob structures."""
 

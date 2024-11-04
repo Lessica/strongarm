@@ -894,6 +894,10 @@ class MachoBinary:
         """Read the team ID the binary was signed with."""
         return self._codesign_parser.signing_team_id
 
+    def get_cdhash(self) -> Optional[str]:
+        """Read the hash of the code directory."""
+        return self._codesign_parser.cdhash
+
     def write_bytes(self, data: bytes, address: int, virtual: bool = False) -> "MachoBinary":
         """Overwrite the data in the current binary with the provided data, returning a new modified binary.
         Note: This will invalidate the binary's code signature, if present.
