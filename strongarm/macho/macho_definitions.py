@@ -667,6 +667,10 @@ class DylibCommand(Structure):
     _fields_ = [*MachoLoadCommand._fields_, ("dylib", DylibStruct)]
 
 
+class UuidCommand(Structure):
+    _fields_ = [*MachoLoadCommand._fields_, ("uuid", c_char * 16)]
+
+
 class CFString32(Structure):
     _fields_ = [("base", c_uint32), ("flags", c_uint32), ("literal", c_uint32), ("length", c_uint32)]
 

@@ -1,4 +1,5 @@
 import math
+import uuid
 from ctypes import Structure, c_uint32, c_uint64, sizeof
 from distutils.version import LooseVersion
 from pathlib import Path
@@ -21,6 +22,7 @@ from strongarm.macho.arch_independent_structs import (
     MachoSectionRawStruct,
     MachoSegmentCommandStruct,
     MachoSymtabCommandStruct,
+    UuidCommandStruct,
 )
 from strongarm.macho.macho_definitions import (
     CPU_TYPE,
@@ -28,6 +30,7 @@ from strongarm.macho.macho_definitions import (
     BindSpecialDylibOrdinal,
     DylibCommand,
     DylibStruct,
+    UuidCommand,
     LcStrUnion,
     MachArch,
     MachoBuildTool,
@@ -190,6 +193,7 @@ class MachoBinary:
         self._functions_list: Optional[Set[VirtualMemoryPointer]] = None
         self._build_version_cmd: Optional[MachoBuildVersionCommandStruct] = None
         self._build_tool_versions: Optional[List[MachoBuildToolVersionStruct]] = None
+        self._uuid_cmd: Optional[UuidCommandStruct] = None
 
         self.__codesign_parser: Optional[CodesignParser] = None
         self.__minimum_deployment_target: Optional[LooseVersion] = None
@@ -365,6 +369,9 @@ class MachoBinary:
                     logger.warning(f"Could not read name of LC_ID_DYLIB command at index {i}, offset {offset}")
                 # This load command should only be present for dylibs. Validate this assumption
                 assert self.file_type == MachoFileType.MH_DYLIB
+
+            elif load_command.cmd == MachoLoadCommands.LC_UUID:
+                self._uuid_cmd = self.read_struct(offset, UuidCommandStruct)
 
             elif load_command.cmd == MachoLoadCommands.LC_BUILD_VERSION:
                 self._build_version_cmd = self.read_struct(offset, MachoBuildVersionCommandStruct)
@@ -881,6 +888,22 @@ class MachoBinary:
 
             self.__codesign_parser = CodesignParser(self)
         return self.__codesign_parser
+
+    @property
+    def uuid(self) -> Optional[UuidCommandStruct]:
+        return self._uuid_cmd
+
+    def get_uuid(self) -> Optional[str]:
+        if not self.uuid:
+            return None
+        return str(uuid.UUID(bytes=self.uuid.uuid))
+
+    def write_uuid(self, uuid_str: str) -> "MachoBinary":
+        new_uuid_cmd = UuidCommand()
+        new_uuid_cmd.cmd = MachoLoadCommands.LC_UUID
+        new_uuid_cmd.uuid = uuid.UUID(uuid_str).bytes
+        new_uuid_cmd.cmdsize = sizeof(new_uuid_cmd)
+        return self.write_struct(new_uuid_cmd, self._uuid_cmd.binary_offset)
 
     def get_entitlements(self) -> Optional[bytearray]:
         """Read the entitlements the binary was signed with."""

@@ -7,6 +7,7 @@ from strongarm.macho.macho_definitions import (
     CFString32,
     CFString64,
     DylibCommand,
+    UuidCommand,
     MachoBuildToolVersion,
     MachoBuildVersionCommand,
     MachoDyldChainedFixupsHeaderRaw,
@@ -314,6 +315,11 @@ class ObjcIvarListStruct(ArchIndependentStructure):
 class DylibCommandStruct(ArchIndependentStructure):
     _32_BIT_STRUCT = DylibCommand
     _64_BIT_STRUCT = DylibCommand
+
+
+class UuidCommandStruct(ArchIndependentStructure):
+    _32_BIT_STRUCT = UuidCommand
+    _64_BIT_STRUCT = UuidCommand
 
 
 class MachoLoadCommandStruct(ArchIndependentStructure):
